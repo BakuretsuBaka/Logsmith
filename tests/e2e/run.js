@@ -43,7 +43,11 @@ pages["reddit.com"] = () => `<body style="margin:0"><reddit-header-large style="
 <div role="dialog" id="post" style="position:fixed;top:10%;left:20%;width:60%;background:#fff;z-index:10"><article><h2>A post in a dialog</h2><p>Log in to like or comment</p><a href="/login">Log in</a></article></div></body>`;
 
 // A feed that stops loading and offers "Try again": pressing it adds posts
-pages["pinterest.com"] = () => `<body style="margin:0">${header}<div id="list">${feed}</div>
+pages["pinterest.com"] = (u) => u.startsWith("/pin/")
+  ? `<body><h1 id="pin">The pin</h1></body>`
+  : u.startsWith("/boards")
+  ? `<a id="pintile" href="/pin/123456/">pin</a><script>document.getElementById('pintile').addEventListener('click',e=>{e.preventDefault();document.body.insertAdjacentHTML('beforeend','<div role=dialog id=pwall>Welcome to Pinterest Log in <a href=/login>Log in</a></div>')})</script>`
+  : `<body style="margin:0">${header}<div id="list">${feed}</div>
 <div id="err"><p>Something went wrong</p><button id="again" onclick="document.getElementById('list').insertAdjacentHTML('beforeend','<article class=more><h2>More</h2></article>');document.getElementById('err').remove()">Try again</button></div>
 <button id="login-cta" onclick="window.__cta=1">Log in</button></body>`;
 
@@ -195,6 +199,14 @@ const check = (name, ok, extra = "") => {
   await page.click("#go2");
   await page.waitForTimeout(1200);
   check("instagram: prompt over the profile with a login address hidden", !(await visible(page, "#cw")), page.url());
+  await page.close();
+
+  page = await ctx.newPage();
+  await page.goto("http://www.pinterest.com/boards/");
+  await page.waitForTimeout(600);
+  await page.click("#pintile");
+  await page.waitForTimeout(1200);
+  check("pinterest: pin tile opens the pin", (await page.locator("#pin").count()) === 1 && page.url().includes("/pin/123456"));
   await page.close();
 
   await ctx.close();

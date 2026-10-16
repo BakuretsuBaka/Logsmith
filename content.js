@@ -425,11 +425,15 @@
   // prompt, while the same address opened as a fresh page works. So a plain click on a post link is turned
   // into exactly that: a normal navigation to the same address, as if you had pasted it into a new tab.
 
-  const POST_PATH = /^\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/[\w-]+\/?$/;
+  const POST_PATHS = {
+    instagram: /^\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/[\w-]+\/?$/,
+    pinterest: /^\/pin\/[\w-]+\/?$/
+  };
+  const POST_PATH = POST_PATHS[SITE];
   addEventListener(
     "click",
     (e) => {
-      if (SITE !== "instagram" || paused || !e.isTrusted || e.defaultPrevented) return;
+      if (!POST_PATH || paused || !e.isTrusted || e.defaultPrevented) return;
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = e.target && e.target.closest && e.target.closest("a[href]");
       if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
@@ -487,11 +491,13 @@
   addEventListener(
     "click",
     (e) => {
-      if (SITE !== "x" || paused || !e.isTrusted || !e.target || !e.target.closest) return;
+      if (paused || !e.isTrusted || !e.target || !e.target.closest) return;
       const chain = [];
       for (let p = e.target, i = 0; p && p !== document.body && i < 5; p = p.parentElement, i++) chain.push(p);
-      clickLog.push(...chain.slice(0, 2).map(describe));
-      if (clickLog.length > 8) clickLog.splice(0, clickLog.length - 8);
+      const link = e.target.closest("a[href]");
+      clickLog.push(...chain.slice(0, 2).map(describe), { tag: "->", label: link ? link.getAttribute("href") : "no link", prevented: e.defaultPrevented });
+      if (clickLog.length > 9) clickLog.splice(0, clickLog.length - 9);
+      if (SITE !== "x") return;
       const ctl = chain.find(fsMatch);
       if (!ctl) return;
       // Already full screen: the button is "exit". If the page did not leave full screen by itself, do it.
