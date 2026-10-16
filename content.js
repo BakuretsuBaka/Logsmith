@@ -167,12 +167,16 @@
     return !!s && (s.position === "fixed" || s.position === "sticky") && r.top <= 2 && r.height <= 140 && r.width >= innerWidth * 0.8;
   }
 
+  // X's bar for visitors: "See <name>'s full profile" with a "Continue to X" button (no login word in it)
+  const X_PROMO = /continue to x\b|full profile|weiter zu x\b|zum vollst[aä]ndigen profil|continuer sur x\b/i;
+
   function isWall(el) {
     if (!shown(el)) return false;
     if (siteChrome(el)) return false;
     if (el.closest('header,nav,[role="banner"],[role="navigation"],[role="menu"],[role="tooltip"],[role="listbox"]')) return false;
     const text = (el.innerText || "").trim();
     if (!text || text.length > 900) return false;
+    if (SITE === "x" && text.length <= 240 && X_PROMO.test(text) && !el.querySelector("article,main,video")) return true;
     if (!authText(text)) return false;
     if (el.querySelector('article,main,[role="feed"],[role="main"],[role="article"]')) return false;
     if (bigMedia(el)) return false;
