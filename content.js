@@ -157,9 +157,13 @@
   // The site's own top bar or navigation, whatever the page calls it (reddit-header-large, nav-bar ...):
   // it carries Log in / Sign up buttons too, but hiding it breaks the page
   const BAR_TAG = /(?:^|-)(?:header|nav|navbar|navigation|topbar|toolbar|masthead|sidebar)(?:-|$)/;
+  const BAR_CLASS = /side-?nav|sidebar|side-?bar|nav-?container|nav-?bar|top-?bar|app-?header|site-?header|page-?header|left-?rail|menu-?bar|tab-?bar/i;
   function siteChrome(el) {
     for (let p = el; p && p !== document.body && p !== ROOT; p = p.parentElement) {
       if (BAR_TAG.test(p.tagName.toLowerCase())) return true;
+      // the side or top bar of the site, named by its classes (TikTok: DivSideNavContainer, data-e2e="...-nav")
+      const names = `${typeof p.className === "string" ? p.className : ""} ${p.id} ${p.getAttribute("data-e2e") || ""} ${p.getAttribute("data-testid") || ""}`;
+      if (BAR_CLASS.test(names) && !/modal|dialog|popup|overlay|login-?(?:container|box)$/i.test(names)) return true;
     }
     if (el.querySelector('[role="search"],input[type="search"],search,form[role="search"],[role="navigation"],nav')) return true;
     const s = style(el);
@@ -272,6 +276,7 @@
 
   function dismiss(el) {
     const root = climb(el);
+    if (siteChrome(root)) return; // never take the site's own bar with a prompt inside it
     log.push({ tag: root.tagName.toLowerCase(), text: (root.innerText || "").replace(/\s+/g, " ").slice(0, 120), at: Date.now() });
     tryClose(root);
     root.setAttribute(WALL, "wall");

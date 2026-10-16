@@ -35,7 +35,7 @@ pages["x.com"] = () => `<body style="margin:0"><div id="react-root">${header}${f
 <div id="vp" data-testid="videoPlayer" style="width:400px;height:240px;background:#222"><video muted></video><button id="fsb" aria-label="Full screen" onclick="document.getElementById('layers').innerHTML='<div role=dialog data-testid=sheetDialog>Sign in to X <a href=/i/flow/login>Log in</a></div>'">fs</button></div>
 <script>setTimeout(()=>{document.getElementById('layers').innerHTML='<div><div style="position:fixed;inset:0;background:#0009"></div><div data-testid="sheetDialog" role="dialog" style="position:fixed;top:25%;left:30%;width:40%;background:#000;color:#fff;padding:24px;z-index:20"><h2>Sign in to X</h2><a href="/i/flow/login" data-testid="loginButton">Log in</a><a href="/i/flow/signup">Create account</a></div></div>';document.documentElement.style.overflow='hidden';},500);</script></body>`;
 
-pages["tiktok.com"] = () => `<body style="margin:0">${header}<div id="feed">${feed}<div style="height:3000px"></div></div>
+pages["tiktok.com"] = () => `<body style="margin:0"><div class="DivSideNavContainer" id="sidenav" style="position:fixed;left:0;top:0;bottom:0;width:240px;background:#fff;z-index:5"><div>For You</div><div>Following</div><div class="DivLoginBox"><p>Log in to follow creators, like videos, and view comments.</p><button id="sn-login" data-e2e="nav-login-button">Log in</button></div><div>Explore</div></div>${header}<div id="feed">${feed}<div style="height:3000px"></div></div>
 <script>setTimeout(()=>{document.body.style.overflow='hidden';const m=document.createElement('div');m.className='DivLoginContainer';m.style.cssText='position:fixed;inset:0;background:#000a;z-index:30';
 m.innerHTML='<div style="background:#fff;margin:15% auto;width:380px;padding:24px"><div data-e2e="modal-close-inner-button" role="button" aria-label="Close">x</div><h2>Log in to TikTok</h2><button data-e2e="channel-item">Use phone / email / username</button><button data-e2e="channel-item">Continue with Google</button></div>';document.body.append(m);},500);</script></body>`;
 
@@ -127,6 +127,7 @@ const check = (name, ok, extra = "") => {
   page = await ctx.newPage();
   await page.goto("http://www.tiktok.com/@user");
   await page.waitForTimeout(2500);
+  check("tiktok: sidebar kept", await visible(page, "#sidenav") && await visible(page, "#sn-login"));
   check("tiktok: login modal hidden", !(await visible(page, ".DivLoginContainer")));
   check("tiktok: page scrolls again", await page.evaluate(() => getComputedStyle(document.documentElement).overflowY !== "hidden" && getComputedStyle(document.body).overflowY !== "hidden"));
   await page.close();
