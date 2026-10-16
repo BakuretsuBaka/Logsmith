@@ -452,25 +452,52 @@
   // the click you just made. This is the browser's own full-screen mode; nothing is sent anywhere.
 
   const FS_LABEL = /full\s?-?screen|vollbild|plein\s+[ée]cran|pantalla\s+completa|schermo\s+intero|tela\s+cheia|полноэкранн|tam\s+ekran|全画面|전체\s?화면|全屏/i;
+  const describe = (el) => ({
+    tag: el.tagName.toLowerCase(),
+    label: el.getAttribute("aria-label") || el.getAttribute("title") || "",
+    testid: el.getAttribute("data-testid") || "",
+    role: el.getAttribute("role") || "",
+    text: (el.innerText || "").trim().slice(0, 30)
+  });
+  const clickLog = [];
+  const fsMatch = (el) =>
+    FS_LABEL.test(el.getAttribute("aria-label") || el.getAttribute("title") || "") ||
+    /full.?screen/i.test(el.getAttribute("data-testid") || "") ||
+    (el.matches("button,[role=button]") && FS_LABEL.test(el.innerText || ""));
+
+  // The video a control belongs to: the nearest ancestor holding one, else the biggest video on screen
+  function videoFor(el) {
+    for (let p = el, i = 0; p && p !== document.body && i < 12; p = p.parentElement, i++) {
+      const v = p.querySelector("video");
+      if (v) return { video: v, box: p };
+    }
+    let best = null;
+    for (const v of document.querySelectorAll("video")) {
+      const r = v.getBoundingClientRect();
+      const area = Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+      if (area > 0 && (!best || area > best.area)) best = { video: v, box: v.parentElement, area };
+    }
+    return best;
+  }
+
   addEventListener(
     "click",
     (e) => {
-      if (SITE !== "x" || paused || !e.isTrusted) return;
-      const b = e.target && e.target.closest && e.target.closest('button,[role="button"]');
-      if (!b || !FS_LABEL.test(b.getAttribute("aria-label") || b.innerText || "")) return;
-      const player = b.closest('[data-testid="videoPlayer"],[data-testid="videoComponent"],[data-testid="previewInterstitial"]');
-      let box = player;
-      let video = player && player.querySelector("video");
-      for (let p = b.parentElement; !video && p && p !== document.body; p = p.parentElement) {
-        video = p.querySelector("video");
-        box = p;
-      }
-      if (!video) return;
+      if (SITE !== "x" || paused || !e.isTrusted || !e.target || !e.target.closest) return;
+      const chain = [];
+      for (let p = e.target, i = 0; p && p !== document.body && i < 5; p = p.parentElement, i++) chain.push(p);
+      clickLog.push(...chain.slice(0, 2).map(describe));
+      if (clickLog.length > 8) clickLog.splice(0, clickLog.length - 8);
+      const ctl = chain.find(fsMatch);
+      if (!ctl) return;
+      const found = videoFor(ctl);
+      if (!found) return log.push({ tag: "fullscreen", text: "no video found", at: Date.now() });
+      const target = found.box.closest('[data-testid="videoPlayer"],[data-testid="videoComponent"]') || found.box;
       setTimeout(() => {
-        if (document.fullscreenElement || !document.fullscreenEnabled) return;
-        log.push({ tag: "fullscreen", text: "player", at: Date.now() });
-        const go = (el) => el.requestFullscreen && el.requestFullscreen().catch(() => {});
-        go(box || video.parentElement || video);
+        if (document.fullscreenElement) return;
+        log.push({ tag: "fullscreen", text: "asked for " + target.tagName.toLowerCase(), at: Date.now() });
+        const tryGo = (el, next) => el.requestFullscreen ? el.requestFullscreen().catch(next) : next && next();
+        tryGo(target, () => tryGo(found.video, (err) => log.push({ tag: "fullscreen", text: "refused: " + (err && err.message), at: Date.now() })));
       }, 250);
     },
     true
@@ -556,6 +583,15 @@
       site: SITE,
       paused,
       keepLoading: settings.keepLoading,
+      lastClicks: clickLog.slice(-6),
+      videos: [...document.querySelectorAll("video")].slice(0, 4).map((v) => {
+        const r = v.getBoundingClientRect();
+        const chain = [];
+        for (let p = v.parentElement, i = 0; p && p !== document.body && i < 6; p = p.parentElement, i++) chain.push(p.tagName.toLowerCase() + (p.getAttribute("data-testid") ? "[" + p.getAttribute("data-testid") + "]" : ""));
+        const btns = [...(v.closest('[data-testid="videoPlayer"]') || v.parentElement.parentElement || v).querySelectorAll("button,[role=button]")].slice(0, 12).map((b) => b.getAttribute("aria-label") || b.getAttribute("data-testid") || (b.innerText || "").slice(0, 20));
+        return { size: Math.round(r.width) + "x" + Math.round(r.height), ancestors: chain, buttons: btns };
+      }),
+      fullscreenEnabled: document.fullscreenEnabled,
       clicks: clicksTotal,
       loginPage: onLoginPage(),
       removed,
