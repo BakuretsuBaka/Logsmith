@@ -100,6 +100,8 @@
     return null;
   }
 
+  const PENDING_SEL = '[role="dialog"]:not([data-logsmith-ok]),[role="alertdialog"]:not([data-logsmith-ok]),[aria-modal="true"]:not([data-logsmith-ok])';
+
   function candidates() {
     const set = new Set();
     document
@@ -409,6 +411,20 @@
       }
     }
     release();
+    clearPending();
+  }
+
+  // Dialogs stay invisible (see content.css) until they were judged: a wall never gets painted, and a dialog
+  // that is not a wall is released as soon as it has content. Nothing stays pending longer than 2.5 seconds.
+  const firstSeen = new WeakMap();
+  function clearPending() {
+    const now = performance.now();
+    for (const el of document.querySelectorAll(PENDING_SEL)) {
+      if (el.hasAttribute(WALL)) continue;
+      if (!firstSeen.has(el)) firstSeen.set(el, now);
+      const filled = (el.innerText || "").trim().length > 0 || el.querySelector("img,svg,video,canvas,input");
+      if (filled || onLoginPage() || now - firstSeen.get(el) > 2500) el.setAttribute("data-logsmith-ok", "");
+    }
   }
 
   function schedule(ms) {

@@ -17,3 +17,10 @@ html[data-logsmith-unlocked]:not([data-logsmith="off"]) body {
 html:not([data-logsmith="off"]) [data-testid="BottomBar"] {
   display: none !important;
 }
+
+/* A dialog is clipped away (still measurable, so it can be judged) from the moment it exists until Logsmith has judged it (a frame later at most) */
+html[data-logsmith="on"] [role="dialog"]:not([data-logsmith-ok]),
+html[data-logsmith="on"] [role="alertdialog"]:not([data-logsmith-ok]),
+html[data-logsmith="on"] [aria-modal="true"]:not([data-logsmith-ok]) {
+  clip-path: inset(100%) !important;
+}
