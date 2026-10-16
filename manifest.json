@@ -1,0 +1,88 @@
+{
+  "manifest_version": 3,
+  "name": "Logsmith",
+  "version": "1.0.0",
+  "description": "Keeps social sites usable without an account: hides the login walls, sign-up pop-ups and scroll locks that appear after a few seconds.",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.x.com/*",
+        "*://*.twitter.com/*",
+        "*://*.threads.net/*",
+        "*://*.threads.com/*",
+        "*://*.facebook.com/*",
+        "*://*.reddit.com/*",
+        "*://*.pinterest.com/*",
+        "*://*.quora.com/*",
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.x.com/*",
+        "*://*.twitter.com/*",
+        "*://*.threads.net/*",
+        "*://*.threads.com/*",
+        "*://*.facebook.com/*",
+        "*://*.reddit.com/*",
+        "*://*.pinterest.com/*",
+        "*://*.quora.com/*",
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "guard.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "action": {
+    "default_title": "Logsmith",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "logsmith@bakuretsubaka",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ]
+  }
+}

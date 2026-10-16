@@ -1,0 +1,32 @@
+name: Release
+
+# Runs when a release is published on GitHub (Releases > Draft a new release with a new tag such as v1.0.0).
+# Builds the Firefox and Chromium packages and attaches them to the release.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Build packages
+        run: python3 tools/build.py
+      - name: Lint the Firefox package
+        run: |
+          mkdir fx && unzip -q dist/*-firefox.zip -d fx
+          npx --yes web-ext lint --source-dir fx
+      - name: Attach packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.zip --clobber

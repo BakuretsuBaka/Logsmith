@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Check the scripts parse
+        run: for f in background.js content.js guard.js popup.js; do node --check $f; done
+      - name: Build and lint the Firefox package
+        run: |
+          python3 tools/build.py
+          mkdir fx && unzip -q dist/*-firefox.zip -d fx
+          npx --yes web-ext lint --source-dir fx

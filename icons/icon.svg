@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#35286b"/><stop offset="1" stop-color="#14102c"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e8841a"/></linearGradient>
+    <radialGradient id="glow" cx="98" cy="98" r="40" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3d" stop-opacity=".45"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <circle cx="98" cy="98" r="40" fill="url(#glow)"/>
+  <g fill="url(#gold)" stroke="none">
+    <circle cx="44.0" cy="44.0" r="18.25" fill="none" stroke="url(#gold)" stroke-width="13.5"/>
+    <polygon points="63.09,54.61 54.61,63.09 98.76,107.24 107.24,98.76"/>
+    <polygon points="91.51,98.58 97.52,104.59 86.91,115.20 80.90,109.19"/>
+    <polygon points="81.96,89.03 87.97,95.05 80.20,102.82 74.19,96.81"/>
+  </g>
+  <polygon points="101.00,14.00 103.57,24.43 114.00,27.00 103.57,29.57 101.00,40.00 98.43,29.57 88.00,27.00 98.43,24.43" fill="#fff1b8"/>
+  <polygon points="116.00,39.50 117.29,44.71 122.50,46.00 117.29,47.29 116.00,52.50 114.71,47.29 109.50,46.00 114.71,44.71" fill="#ff8a3d"/>
+  <polygon points="84.00,8.50 85.09,12.91 89.50,14.00 85.09,15.09 84.00,19.50 82.91,15.09 78.50,14.00 82.91,12.91" fill="#ff8a3d"/>
+</svg>

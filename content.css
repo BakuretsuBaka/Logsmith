@@ -1,0 +1,19 @@
+/* Walls Logsmith has dealt with stay hidden, whatever the page does with its own styles afterwards */
+html:not([data-logsmith="off"]) [data-logsmith-wall] {
+  display: none !important;
+}
+
+/* After a wall was hidden: give scrolling and clicking back to the page */
+html[data-logsmith-unlocked]:not([data-logsmith="off"]),
+html[data-logsmith-unlocked]:not([data-logsmith="off"]) body {
+  overflow-y: auto !important;
+}
+
+html[data-logsmith-unlocked]:not([data-logsmith="off"]) body {
+  position: static !important;
+}
+
+/* X: the "Don't miss what's happening" bar at the bottom of the window */
+html:not([data-logsmith="off"]) [data-testid="BottomBar"] {
+  display: none !important;
+}

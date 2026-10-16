@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Logsmith</title>
+  <style>
+    :root { color-scheme: light dark; --line: #8884; --accent: #e8841a; }
+    body { margin: 0; width: 290px; padding: 14px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    h1 { font-size: 15px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; gap: 10px; }
+    .muted { opacity: .65; font-size: 12.5px; }
+    [hidden] { display: none !important; }
+    button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; width: 100%; margin-top: 10px; }
+    button:hover { border-color: var(--accent); }
+    details { margin-top: 10px; }
+    summary { cursor: pointer; opacity: .8; font-size: 13px; }
+    .switch { position: relative; display: inline-flex; cursor: pointer; flex: none; }
+    .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .slider { width: 36px; height: 20px; border-radius: 999px; background: #9ca3af88; position: relative; transition: background .15s; }
+    .slider::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px #0004; }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::after { transform: translateX(16px); }
+  </style>
+</head>
+<body>
+  <h1><img src="icons/icon-32.png" width="24" height="24" alt="">Logsmith</h1>
+  <div class="row"><span>Logsmith on</span><label class="switch"><input type="checkbox" id="enabled"><span class="slider"></span></label></div>
+  <div class="row" id="siteRow" hidden><span id="siteLabel">This site</span><label class="switch"><input type="checkbox" id="site"><span class="slider"></span></label></div>
+  <div class="row muted"><span id="status">Open a supported site to see what Logsmith does there.</span></div>
+  <details>
+    <summary>Sites</summary>
+    <div id="sites"></div>
+  </details>
+  <button id="debug">Copy debug info for this page</button>
+  <script src="popup.js"></script>
+</body>
+</html>
