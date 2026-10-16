@@ -80,7 +80,11 @@
   const log = []; // what was hidden, for the debug button
 
   const isPaused = () => !settings.enabled || settings.sites[SITE] === false;
-  const onLoginPage = () => LOGIN_PATH.test(location.pathname);
+  // A real log-in page has a form to fill in. When the address says "login" but the page only shows the
+  // profile or feed with a prompt on top (the app switched the address by itself), it is still a wall.
+  const onLoginPage = () =>
+    LOGIN_PATH.test(location.pathname) &&
+    [...document.querySelectorAll('input[type="password"],input[name="username"],input[autocomplete="username"],input[name="email"]')].some(shown);
 
   // ───────────── Finding walls
 
@@ -465,7 +469,13 @@
     for (const el of document.querySelectorAll(PENDING_SEL)) {
       if (el.hasAttribute(WALL)) continue;
       if (!firstSeen.has(el)) firstSeen.set(el, now);
-      const filled = (el.innerText || "").trim().length > 0 || el.querySelector("img,svg,video,canvas,input");
+      const text = (el.innerText || "").trim();
+      // Whatever the finer checks said: a short dialog that asks for an account and shows no content is a wall
+      if (text && text.length <= 900 && authText(text) && !onLoginPage() && !el.querySelector("article,main,[role=feed],[role=main]") && shown(el)) {
+        dismiss(climb(el));
+        continue;
+      }
+      const filled = text.length > 0 || el.querySelector("img,svg,video,canvas,input");
       if (filled || onLoginPage() || now - firstSeen.get(el) > 2500) el.setAttribute("data-logsmith-ok", "");
     }
   }

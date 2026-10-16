@@ -13,7 +13,7 @@ const header = `<header role="banner"><a href="/accounts/login/" id="hdr-login">
 
 pages["instagram.com"] = (u) => u.startsWith("/p/")
   ? `<body><h1 id="post">The post</h1></body>`
-  : u.startsWith("/lilbieber") ? `<body><a id="tile" href="/p/Abc123/">tile</a><script>document.getElementById('tile').addEventListener('click',e=>{e.preventDefault();history.pushState(null,'','/accounts/login/');document.body.innerHTML='<div role=dialog>Log in to see this</div>'})</script></body>`
+  : u.startsWith("/lilbieber") ? `<body><a id="tile" href="/p/Abc123/">tile</a><button id="go2" style="position:relative;z-index:5">go</button><script>document.getElementById('go2').addEventListener('click',()=>{history.pushState(null,'','/accounts/login/');const d=document.createElement('div');d.setAttribute('role','dialog');d.id='cw';d.innerHTML='<div style="position:fixed;top:20%;left:25%;width:50%;background:#fff;padding:24px;z-index:9"><h2>Continue watching</h2><p>More photos, videos, and ways to connect with lilbieber.</p><a href="/accounts/emailsignup/">Sign up</a><a href="/accounts/login/">Log in</a></div>';document.body.append(d)});document.getElementById('tile').addEventListener('click',e=>{e.preventDefault();history.pushState(null,'','/accounts/login/');document.body.innerHTML='<div role=dialog>Log in to see this</div>'})</script></body>`
   : u.startsWith("/accounts/login")
   ? `<body>${header}<div role="dialog" id="real-login"><form>Log in<input name="username"><input type="password"><button>Log in</button></form></div></body>`
   : `<body style="margin:0">${header}<div id="app" style="filter:blur(8px)">${feed}<div style="height:3000px"></div></div>
@@ -176,6 +176,15 @@ const check = (name, ok, extra = "") => {
   });
   check("instagram: early dimming layer not painted", dimFlash.gone);
   check("instagram: unrelated dimming layer released after a while", dimFlash.back, JSON.stringify(dimFlash));
+  await page.close();
+
+  // The address switched to a log-in route by itself while the profile stays: still a wall
+  page = await ctx.newPage();
+  await page.goto("http://www.instagram.com/lilbieber/");
+  await page.waitForTimeout(800);
+  await page.click("#go2");
+  await page.waitForTimeout(1200);
+  check("instagram: prompt over the profile with a login address hidden", !(await visible(page, "#cw")), page.url());
   await page.close();
 
   await ctx.close();
