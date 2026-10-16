@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Logsmith",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Keeps social sites usable without an account: hides the login walls, sign-up pop-ups and scroll locks that appear after a few seconds.",
   "permissions": [
     "storage"

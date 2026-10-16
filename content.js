@@ -385,8 +385,23 @@
 
   // ───────────── Running
 
+  // Pop-ups are caught before the browser paints them: a mutation schedules a scan for the next animation
+  // frame (which runs before painting) instead of after a delay. Under heavy churn scans are at least 60ms apart.
+  let raf = 0;
+  let lastScanAt = 0;
+  function soon() {
+    if (raf || timer) return;
+    const wait = 60 - (performance.now() - lastScanAt);
+    if (wait > 0) return schedule(wait);
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      scan();
+    });
+  }
+
   function scan() {
     timer = 0;
+    lastScanAt = performance.now();
     if (paused || document.visibilityState === "hidden" || !document.body) return;
     if (!onLoginPage()) {
       for (const el of candidates()) {
@@ -443,7 +458,7 @@
   }
 
   function init() {
-    new MutationObserver(() => schedule(120)).observe(ROOT, {
+    new MutationObserver(soon).observe(ROOT, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -452,7 +467,7 @@
     // Walls often appear on a timer without any DOM change we would notice in time
     setInterval(() => !paused && schedule(0), 1500);
     setInterval(keepLoading, 1500);
-    document.addEventListener("scroll", () => !paused && schedule(300), { passive: true, capture: true });
+    document.addEventListener("scroll", () => !paused && soon(), { passive: true, capture: true });
     addEventListener("popstate", () => !paused && schedule(200));
 
     api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

@@ -142,6 +142,23 @@ const check = (name, ok, extra = "") => {
   check("instagram: post tile opens the post", (await page.locator("#post").count()) === 1 && page.url().includes("/p/Abc123"));
   await page.close();
 
+  // A pop-up added later must be gone by the first frame that gets painted
+  page = await ctx.newPage();
+  await page.goto("http://www.instagram.com/lilbieber/");
+  await page.waitForTimeout(800);
+  const flashed = await page.evaluate(async () => {
+    const d = document.createElement("div");
+    d.setAttribute("role", "dialog");
+    d.id = "late";
+    d.innerHTML = '<div style="position:fixed;top:30%;left:30%;width:40%;background:#fff;padding:20px;z-index:10"><h3>Log in to continue</h3><a href="/accounts/login/">Log in</a> <a href="/accounts/emailsignup/">Sign up</a></div>';
+    document.body.append(d);
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    const r = d.firstElementChild.getBoundingClientRect();
+    return getComputedStyle(d).display !== "none" && r.width > 0;
+  });
+  check("instagram: late pop-up gone before the first paint", !flashed);
+  await page.close();
+
   await ctx.close();
   server.close();
   console.log(failed ? `${failed} check(s) failed` : "all checks passed");
