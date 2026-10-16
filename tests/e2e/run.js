@@ -112,6 +112,9 @@ const check = (name, ok, extra = "") => {
   await page.click("#fsb");
   await page.waitForTimeout(900);
   check("x: video goes full screen", await page.evaluate(() => !!document.fullscreenElement));
+  await page.click("#fsb");
+  await page.waitForTimeout(900);
+  check("x: exit full screen button works", await page.evaluate(() => !document.fullscreenElement));
   await page.close();
 
   // TikTok

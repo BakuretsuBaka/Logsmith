@@ -490,6 +490,19 @@
       if (clickLog.length > 8) clickLog.splice(0, clickLog.length - 8);
       const ctl = chain.find(fsMatch);
       if (!ctl) return;
+      // Already full screen: the button is "exit". If the page did not leave full screen by itself, do it.
+      if (document.fullscreenElement) {
+        setTimeout(() => {
+          if (!document.fullscreenElement) return;
+          log.push({ tag: "fullscreen", text: "exit", at: Date.now() });
+          try {
+            document.exitFullscreen().catch(() => {});
+          } catch {
+            /* ignore */
+          }
+        }, 250);
+        return;
+      }
       const found = videoFor(ctl);
       if (!found) return log.push({ tag: "fullscreen", text: "no video found", at: Date.now() });
       const target = found.box.closest('[data-testid="videoPlayer"],[data-testid="videoComponent"]') || found.box;
