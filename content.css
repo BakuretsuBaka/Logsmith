@@ -24,3 +24,8 @@ html[data-logsmith="on"] [role="alertdialog"]:not([data-logsmith-ok]),
 html[data-logsmith="on"] [aria-modal="true"]:not([data-logsmith-ok]) {
   clip-path: inset(100%) !important;
 }
+
+/* A dimming layer is held back as soon as it is added, until its pop-up has been judged */
+html[data-logsmith="on"] [data-logsmith-hold] {
+  clip-path: inset(100%) !important;
+}

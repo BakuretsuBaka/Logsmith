@@ -159,6 +159,25 @@ const check = (name, ok, extra = "") => {
   check("instagram: late pop-up gone before the first paint", !flashed);
   await page.close();
 
+  // The dimming layer that arrives before its pop-up must not be painted either
+  page = await ctx.newPage();
+  await page.goto("http://www.instagram.com/lilbieber/");
+  await page.waitForTimeout(800);
+  const dimFlash = await page.evaluate(async () => {
+    const dim = document.createElement("div");
+    dim.id = "earlydim";
+    dim.style.cssText = "position:fixed;inset:0;background:#000b;z-index:5";
+    document.body.append(dim);
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    const gone = getComputedStyle(dim).clipPath !== "none" || getComputedStyle(dim).display === "none";
+    await new Promise((r) => setTimeout(r, 3600));
+    const back = getComputedStyle(dim).clipPath === "none" && getComputedStyle(dim).display !== "none";
+    return { gone, back, attrs: dim.getAttributeNames().join(","), cp: getComputedStyle(dim).clipPath, d: getComputedStyle(dim).display };
+  });
+  check("instagram: early dimming layer not painted", dimFlash.gone);
+  check("instagram: unrelated dimming layer released after a while", dimFlash.back, JSON.stringify(dimFlash));
+  await page.close();
+
   await ctx.close();
   server.close();
   console.log(failed ? `${failed} check(s) failed` : "all checks passed");

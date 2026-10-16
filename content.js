@@ -196,6 +196,47 @@
     }
   }
 
+  // A dimming layer that shows up before its pop-up: held back (invisible) the moment it is added. It is hidden
+  // for good when a wall is dismissed, and released again when a normal dialog shows up or after 2.5 seconds.
+  const HOLD = "data-logsmith-hold";
+  const holdTime = new WeakMap();
+  const emptyLayer = (el) =>
+    el.nodeType === 1 &&
+    !el.hasAttribute(WALL) &&
+    !el.hasAttribute(HOLD) &&
+    !(el.textContent || "").trim() &&
+    !el.querySelector("video,img,canvas,svg,input,iframe") &&
+    covers(el);
+  function holdAdded(records) {
+    if (paused || onLoginPage()) return;
+    let n = 0;
+    for (const rec of records) {
+      for (const node of rec.addedNodes) {
+        if (node.nodeType !== 1 || n > 40) continue;
+        for (const el of [node, ...(node.querySelectorAll ? [...node.querySelectorAll("div,section,aside")].slice(0, 12) : [])]) {
+          n++;
+          if (emptyLayer(el)) {
+            el.setAttribute(HOLD, "");
+            holdTime.set(el, performance.now());
+            setTimeout(() => schedule(0), 2600);
+          }
+        }
+      }
+    }
+  }
+  function settleHolds(wallSeen) {
+    const held = document.querySelectorAll(`[${HOLD}]`);
+    if (!held.length) return;
+    const now = performance.now();
+    const dialogShown = [...document.querySelectorAll("[role=dialog][data-logsmith-ok]")].some(shown);
+    for (const el of held) {
+      if (wallSeen) {
+        el.setAttribute(WALL, "backdrop");
+        el.removeAttribute(HOLD);
+      } else if (dialogShown || now - (holdTime.get(el) || 0) > 2500) el.removeAttribute(HOLD);
+    }
+  }
+
   function tryClose(root) {
     const btn = root.querySelector(
       '[aria-label*="close" i],[aria-label*="schließen" i],[aria-label*="fermer" i],[aria-label*="cerrar" i],[aria-label*="dismiss" i],[data-e2e*="close" i],[data-testid*="close" i]'
@@ -213,6 +254,7 @@
     tryClose(root);
     root.setAttribute(WALL, "wall");
     hideBackdrops(root);
+    settleHolds(true);
     removed++;
     lastDismiss = Date.now();
     unlocked = true;
@@ -412,6 +454,7 @@
     }
     release();
     clearPending();
+    settleHolds(false);
   }
 
   // Dialogs stay invisible (see content.css) until they were judged: a wall never gets painted, and a dialog
@@ -474,7 +517,10 @@
   }
 
   function init() {
-    new MutationObserver(soon).observe(ROOT, {
+    new MutationObserver((records) => {
+      holdAdded(records);
+      soon();
+    }).observe(ROOT, {
       childList: true,
       subtree: true,
       attributes: true,
