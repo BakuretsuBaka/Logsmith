@@ -353,6 +353,36 @@
     }
   }
 
+  // ───────────── Opening posts like a fresh page load
+  //
+  // On Instagram a click on a post inside the app is handled by the page's own script, which shows a log-in
+  // prompt, while the same address opened as a fresh page works. So a plain click on a post link is turned
+  // into exactly that: a normal navigation to the same address, as if you had pasted it into a new tab.
+
+  const POST_PATH = /^\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/[\w-]+\/?$/;
+  addEventListener(
+    "click",
+    (e) => {
+      if (SITE !== "instagram" || paused || !e.isTrusted || e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target && e.target.closest && e.target.closest("a[href]");
+      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+      let url;
+      try {
+        url = new URL(a.href, location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== location.origin || !POST_PATH.test(url.pathname)) return;
+      if (url.pathname === location.pathname) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      log.push({ tag: "open-post", text: url.pathname, at: Date.now() });
+      location.assign(url.href);
+    },
+    true
+  );
+
   // ───────────── Running
 
   function scan() {

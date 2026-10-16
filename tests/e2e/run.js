@@ -11,7 +11,10 @@ const pages = {};
 const feed = `<main><article><h2>Post one</h2><p>Some text</p></article><article><h2>Post two</h2></article></main>`;
 const header = `<header role="banner"><a href="/accounts/login/" id="hdr-login">Log in</a></header>`;
 
-pages["instagram.com"] = (u) => u.startsWith("/accounts/login")
+pages["instagram.com"] = (u) => u.startsWith("/p/")
+  ? `<body><h1 id="post">The post</h1></body>`
+  : u.startsWith("/lilbieber") ? `<body><a id="tile" href="/p/Abc123/">tile</a><script>document.getElementById('tile').addEventListener('click',e=>{e.preventDefault();history.pushState(null,'','/accounts/login/');document.body.innerHTML='<div role=dialog>Log in to see this</div>'})</script></body>`
+  : u.startsWith("/accounts/login")
   ? `<body>${header}<div role="dialog" id="real-login"><form>Log in<input name="username"><input type="password"><button>Log in</button></form></div></body>`
   : `<body style="margin:0">${header}<div id="app" style="filter:blur(8px)">${feed}<div style="height:3000px"></div></div>
 <div id="dim" style="display:none;position:fixed;inset:0;background:#0008"></div>
@@ -128,6 +131,15 @@ const check = (name, ok, extra = "") => {
   await page.waitForTimeout(6500);
   check("pinterest: retry pressed, more posts loaded", (await page.locator("article.more").count()) === 1);
   check("pinterest: log-in button not pressed", await page.evaluate(() => !window.__cta));
+  await page.close();
+
+  // Instagram: a click on a post tile becomes a normal page load
+  page = await ctx.newPage();
+  await page.goto("http://www.instagram.com/lilbieber/");
+  await page.waitForTimeout(800);
+  await page.click("#tile");
+  await page.waitForTimeout(1200);
+  check("instagram: post tile opens the post", (await page.locator("#post").count()) === 1 && page.url().includes("/p/Abc123"));
   await page.close();
 
   await ctx.close();
