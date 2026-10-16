@@ -1,7 +1,7 @@
 // Unit tests for the pure parts of content.js (run with `npm test`). The page behaviour is covered by tests/e2e/run.js.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { siteOf, authText, LOGIN_PATH } = require("../content.js");
+const { siteOf, authText, retryText, LOGIN_PATH } = require("../content.js");
 
 test("sites are recognised by host", () => {
   assert.equal(siteOf("www.instagram.com"), "instagram");
@@ -36,4 +36,9 @@ test("real login pages are left alone", () => {
     assert.ok(LOGIN_PATH.test(p), p);
   }
   for (const p of ["/", "/nasa/", "/@user/video/123", "/explore", "/loginfoo", "/home"]) assert.equal(LOGIN_PATH.test(p), false, p);
+});
+
+test("retry buttons are recognised, log-in buttons are not", () => {
+  for (const ok of ["Try again", "Retry", "Load more", "Erneut versuchen", "Mehr laden", "Réessayer", "もう一度"]) assert.ok(retryText(ok), ok);
+  for (const no of ["Log in", "Sign up", "Retryable", "Follow"]) assert.ok(!retryText(no), no);
 });

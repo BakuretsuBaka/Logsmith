@@ -6,10 +6,10 @@ const NAMES = {
   reddit: "Reddit", pinterest: "Pinterest", quora: "Quora", linkedin: "LinkedIn"
 };
 
-let settings = { enabled: true, sites: {} };
+let settings = { enabled: true, sites: {}, keepLoading: true };
 let tabSite = null;
 
-const save = () => api.storage.local.set({ enabled: settings.enabled, sites: settings.sites });
+const save = () => api.storage.local.set({ enabled: settings.enabled, sites: settings.sites, keepLoading: settings.keepLoading });
 
 function switchRow(label, checked, onChange) {
   const row = document.createElement("div");
@@ -31,6 +31,7 @@ function switchRow(label, checked, onChange) {
 
 function render() {
   $("enabled").checked = settings.enabled;
+  $("keepLoading").checked = settings.keepLoading;
   const list = $("sites");
   list.textContent = "";
   for (const [id, name] of Object.entries(NAMES)) {
@@ -44,13 +45,17 @@ function render() {
   }
 }
 
-api.storage.local.get(["enabled", "sites"], (res) => {
-  settings = { enabled: !res || res.enabled !== false, sites: (res && res.sites) || {} };
+api.storage.local.get(["enabled", "sites", "keepLoading"], (res) => {
+  settings = { enabled: !res || res.enabled !== false, sites: (res && res.sites) || {}, keepLoading: !res || res.keepLoading !== false };
   render();
 });
 
 $("enabled").addEventListener("change", (e) => {
   settings.enabled = e.target.checked;
+  save();
+});
+$("keepLoading").addEventListener("change", (e) => {
+  settings.keepLoading = e.target.checked;
   save();
 });
 

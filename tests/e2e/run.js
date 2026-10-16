@@ -37,6 +37,11 @@ m.innerHTML='<div style="background:#fff;margin:15% auto;width:380px;padding:24p
 pages["reddit.com"] = () => `<body style="margin:0">${header}${feed}
 <div role="dialog" id="post" style="position:fixed;top:10%;left:20%;width:60%;background:#fff;z-index:10"><article><h2>A post in a dialog</h2><p>Log in to like or comment</p><a href="/login">Log in</a></article></div></body>`;
 
+// A feed that stops loading and offers "Try again": pressing it adds posts
+pages["pinterest.com"] = () => `<body style="margin:0">${header}<div id="list">${feed}</div>
+<div id="err"><p>Something went wrong</p><button id="again" onclick="document.getElementById('list').insertAdjacentHTML('beforeend','<article class=more><h2>More</h2></article>');document.getElementById('err').remove()">Try again</button></div>
+<button id="login-cta" onclick="window.__cta=1">Log in</button></body>`;
+
 const server = http.createServer((req, res) => {
   const host = (req.headers.host || "").replace(/^www\./, "").split(":")[0];
   const f = pages[host];
@@ -53,7 +58,7 @@ const check = (name, ok, extra = "") => {
 (async () => {
   await new Promise((r) => server.listen(0, r));
   const port = server.address().port;
-  const rules = ["instagram.com", "www.instagram.com", "x.com", "www.x.com", "tiktok.com", "www.tiktok.com", "reddit.com", "www.reddit.com"]
+  const rules = ["instagram.com", "www.instagram.com", "x.com", "www.x.com", "tiktok.com", "www.tiktok.com", "reddit.com", "www.reddit.com", "pinterest.com", "www.pinterest.com"]
     .map((h) => `MAP ${h} 127.0.0.1:${port}`).join(", ");
   const ctx = await chromium.launchPersistentContext("", {
     channel: "chromium",
@@ -115,6 +120,14 @@ const check = (name, ok, extra = "") => {
   await page.goto("http://www.reddit.com/r/test");
   await page.waitForTimeout(2000);
   check("reddit: post dialog with article text kept", await visible(page, "#post"));
+  await page.close();
+
+  // A stalled feed: Logsmith presses "Try again" (and never the log-in button)
+  page = await ctx.newPage();
+  await page.goto("http://www.pinterest.com/");
+  await page.waitForTimeout(6500);
+  check("pinterest: retry pressed, more posts loaded", (await page.locator("article.more").count()) === 1);
+  check("pinterest: log-in button not pressed", await page.evaluate(() => !window.__cta));
   await page.close();
 
   await ctx.close();

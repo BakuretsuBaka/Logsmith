@@ -47,7 +47,17 @@
     'input[name="username"],input[autocomplete="username"],[data-testid*="login" i],[data-testid*="signup" i],' +
     '[data-e2e*="login" i],[data-e2e*="signup" i],[id*="login" i] button,[class*="login" i] button';
 
-  if (typeof module !== "undefined") module.exports = { siteOf, authText, LOGIN_PATH, SITES };
+  // Buttons a page shows when a feed stopped loading: pressing them is what a person would do
+  const RETRY_RE = new RegExp(
+    "(?:^|[^\\p{L}])(?:retry|try\\s+again|load\\s+more|erneut\\s+versuchen|nochmal\\s+versuchen|mehr\\s+laden|r[ée]essayer|charger\\s+plus|" +
+      "intentar\\s+de\\s+nuevo|reintentar|cargar\\s+m[aá]s|riprova|carica\\s+altro|tentar\\s+novamente|carregar\\s+mais|" +
+      "повторить|загрузить\\s+ещ[ёе]|tekrar\\s+dene)(?![\\p{L}])",
+    "iu"
+  );
+  const RETRY_CJK = /もう一度|再試行|다시 시도|重试|重試/;
+  const retryText = (t) => !authText(t) && (RETRY_RE.test(t) || RETRY_CJK.test(t));
+
+  if (typeof module !== "undefined") module.exports = { siteOf, authText, retryText, LOGIN_PATH, SITES };
   if (typeof document === "undefined" || typeof window === "undefined") return;
 
   // ───────────── State
@@ -61,7 +71,7 @@
   const UNBLUR = "data-logsmith-unblur";
   const ROOT = document.documentElement;
 
-  let settings = { enabled: true, sites: {} };
+  let settings = { enabled: true, sites: {}, keepLoading: true };
   let paused = false;
   let removed = 0;
   let lastDismiss = 0;
@@ -264,6 +274,85 @@
     unlocked = false;
   }
 
+  // ───────────── Keeping feeds loading
+  //
+  // Behind a wall, the page often stops asking for more: scrolling was locked, or it shows "Something went wrong"
+  // with a Retry button. Logsmith presses Retry like a person would and, when the end of the feed is reached and
+  // nothing new appeared, wakes the page's own loader with scroll and resize events. It does not forge requests,
+  // change who you are to the site or get around its limits: if the server says no, the feed stays put.
+
+  const retried = new WeakMap();
+  let lastActivity = 0;
+  let lastHeight = 0;
+  let still = 0;
+  let nudges = 0;
+  let lastNudge = 0;
+  let clicksTotal = 0;
+  let lastClick = 0;
+  let failStreak = 0;
+
+  for (const type of ["scroll", "wheel", "keydown", "touchmove", "pointermove"]) {
+    addEventListener(type, () => (lastActivity = Date.now()), { passive: true, capture: true });
+  }
+
+  function keepLoading() {
+    if (paused || !settings.keepLoading || document.visibilityState === "hidden" || !document.body) return;
+    const now = Date.now();
+    const height = ROOT.scrollHeight;
+    if (height !== lastHeight) {
+      if (height > lastHeight) failStreak = 0; // new content: the last press worked
+      lastHeight = height;
+      still = 0;
+      nudges = 0;
+    } else still++;
+
+    // 1. Retry buttons, politely: a pause that doubles with every press that brought nothing, and a ceiling
+    const gap = Math.min(4000 * 2 ** failStreak, 60000);
+    if (!onLoginPage() && clicksTotal < 30 && now - lastClick >= gap) {
+      for (const b of document.querySelectorAll('button,[role="button"]')) {
+        if (b.disabled || b.closest('header,nav,[role="banner"],[role="navigation"]') || !shown(b)) continue;
+        const t = (b.innerText || b.getAttribute("aria-label") || "").trim();
+        if (!t || t.length > 30 || !retryText(t)) continue;
+        const r = b.getBoundingClientRect();
+        if (r.bottom < -innerHeight || r.top > innerHeight * 2) continue;
+        const seen = retried.get(b) || 0;
+        if (seen >= 6) continue;
+        retried.set(b, seen + 1);
+        clicksTotal++;
+        lastClick = now;
+        failStreak++;
+        log.push({ tag: "retry", text: t, at: now });
+        try {
+          b.click();
+        } catch {
+          /* the page removed it */
+        }
+        break;
+      }
+    }
+
+    // 2. End of the feed reached, nothing new for a few seconds, and you are the one scrolling: wake the loader
+    const nearEnd = scrollY + innerHeight >= height - innerHeight * 1.2;
+    if (nearEnd && still >= 2 && nudges < 4 && now - lastNudge > 1800 && now - lastActivity < 15000) {
+      nudges++;
+      lastNudge = now;
+      log.push({ tag: "nudge", text: "scroll/resize", at: now });
+      const el = document.scrollingElement || ROOT;
+      for (const target of [window, document, el]) {
+        try {
+          target.dispatchEvent(new Event("scroll", { bubbles: target !== window }));
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        window.dispatchEvent(new Event("resize"));
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   // ───────────── Running
 
   function scan() {
@@ -307,6 +396,8 @@
       url: location.href,
       site: SITE,
       paused,
+      keepLoading: settings.keepLoading,
+      clicks: clicksTotal,
       loginPage: onLoginPage(),
       removed,
       hidden: log.slice(-10),
@@ -330,6 +421,7 @@
     });
     // Walls often appear on a timer without any DOM change we would notice in time
     setInterval(() => !paused && schedule(0), 1500);
+    setInterval(keepLoading, 1500);
     document.addEventListener("scroll", () => !paused && schedule(300), { passive: true, capture: true });
     addEventListener("popstate", () => !paused && schedule(200));
 
@@ -339,7 +431,7 @@
       if (msg.type === "logsmith:debug") sendResponse(debugInfo());
     });
     api.storage.onChanged.addListener((changes, area) => {
-      if (area !== "local" || !(changes.enabled || changes.sites)) return;
+      if (area !== "local" || !(changes.enabled || changes.sites || changes.keepLoading)) return;
       load().then(apply);
     });
     apply();
@@ -348,9 +440,9 @@
   function load() {
     return new Promise((resolve) => {
       try {
-        api.storage.local.get(["enabled", "sites"], (res) => {
+        api.storage.local.get(["enabled", "sites", "keepLoading"], (res) => {
           void api.runtime.lastError;
-          settings = { enabled: res && res.enabled !== false, sites: (res && res.sites) || {} };
+          settings = { enabled: res && res.enabled !== false, sites: (res && res.sites) || {}, keepLoading: !res || res.keepLoading !== false };
           resolve();
         });
       } catch {
