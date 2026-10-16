@@ -37,7 +37,7 @@ pages["tiktok.com"] = () => `<body style="margin:0">${header}<div id="feed">${fe
 <script>setTimeout(()=>{document.body.style.overflow='hidden';const m=document.createElement('div');m.className='DivLoginContainer';m.style.cssText='position:fixed;inset:0;background:#000a;z-index:30';
 m.innerHTML='<div style="background:#fff;margin:15% auto;width:380px;padding:24px"><div data-e2e="modal-close-inner-button" role="button" aria-label="Close">x</div><h2>Log in to TikTok</h2><button data-e2e="channel-item">Use phone / email / username</button><button data-e2e="channel-item">Continue with Google</button></div>';document.body.append(m);},500);</script></body>`;
 
-pages["reddit.com"] = () => `<body style="margin:0">${header}${feed}
+pages["reddit.com"] = () => `<body style="margin:0"><reddit-header-large style="display:block;position:fixed;top:0;left:0;right:0;height:56px;background:#fff;z-index:20"><form role="search"><input type="search"></form><a id="rd-signup" href="/register">Sign Up</a> <a id="rd-login" href="/login">Log In</a> <button aria-label="Expand user menu">menu</button></reddit-header-large><div style="height:60px"></div>${feed}
 <div role="dialog" id="post" style="position:fixed;top:10%;left:20%;width:60%;background:#fff;z-index:10"><article><h2>A post in a dialog</h2><p>Log in to like or comment</p><a href="/login">Log in</a></article></div></body>`;
 
 // A feed that stops loading and offers "Try again": pressing it adds posts
@@ -123,6 +123,7 @@ const check = (name, ok, extra = "") => {
   await page.goto("http://www.reddit.com/r/test");
   await page.waitForTimeout(2000);
   check("reddit: post dialog with article text kept", await visible(page, "#post"));
+  check("reddit: custom-element header with Log In kept", await visible(page, "reddit-header-large") && await visible(page, "#rd-login"));
   await page.close();
 
   // A stalled feed: Logsmith presses "Try again" (and never the log-in button)

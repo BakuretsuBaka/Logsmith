@@ -154,8 +154,22 @@
     return false;
   }
 
+  // The site's own top bar or navigation, whatever the page calls it (reddit-header-large, nav-bar ...):
+  // it carries Log in / Sign up buttons too, but hiding it breaks the page
+  const BAR_TAG = /(?:^|-)(?:header|nav|navbar|navigation|topbar|toolbar|masthead|sidebar)(?:-|$)/;
+  function siteChrome(el) {
+    for (let p = el; p && p !== document.body && p !== ROOT; p = p.parentElement) {
+      if (BAR_TAG.test(p.tagName.toLowerCase())) return true;
+    }
+    if (el.querySelector('[role="search"],input[type="search"],search,form[role="search"],[role="navigation"],nav')) return true;
+    const s = style(el);
+    const r = el.getBoundingClientRect();
+    return !!s && (s.position === "fixed" || s.position === "sticky") && r.top <= 2 && r.height <= 140 && r.width >= innerWidth * 0.8;
+  }
+
   function isWall(el) {
     if (!shown(el)) return false;
+    if (siteChrome(el)) return false;
     if (el.closest('header,nav,[role="banner"],[role="navigation"],[role="menu"],[role="tooltip"],[role="listbox"]')) return false;
     const text = (el.innerText || "").trim();
     if (!text || text.length > 900) return false;
@@ -471,7 +485,7 @@
       if (!firstSeen.has(el)) firstSeen.set(el, now);
       const text = (el.innerText || "").trim();
       // Whatever the finer checks said: a short dialog that asks for an account and shows no content is a wall
-      if (text && text.length <= 900 && authText(text) && !onLoginPage() && !el.querySelector("article,main,[role=feed],[role=main]") && shown(el)) {
+      if (text && text.length <= 900 && authText(text) && !onLoginPage() && !siteChrome(el) && !el.querySelector("article,main,[role=feed],[role=main]") && shown(el)) {
         dismiss(climb(el));
         continue;
       }
