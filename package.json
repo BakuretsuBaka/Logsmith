@@ -2,7 +2,7 @@
   "name": "logsmith",
   "version": "1.4.5",
   "description": "Keeps social sites usable without an account by hiding login walls and sign-up pop-ups",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "private": true,
   "scripts": {
     "test": "node --test tests/logsmith.test.js"

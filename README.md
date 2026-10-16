@@ -39,3 +39,7 @@ No build step for development. `content.js` holds the detection, `guard.js` runs
 - `npm test` runs the unit tests.
 - `tests/e2e/run.js` loads the extension into a real Chromium and checks it against simulated Instagram, X, TikTok and Reddit pages (needs Playwright: `NODE_PATH=/path/to/node_modules node tests/e2e/run.js`).
 - `python3 tools/build.py` writes the Firefox and Chromium packages to `dist/`; `python3 tools/make_icons.py` redraws the icon.
+
+## License
+
+GPL-3.0-only, see [LICENSE](LICENSE).
