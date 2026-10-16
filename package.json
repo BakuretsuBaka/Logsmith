@@ -1,6 +1,6 @@
 {
   "name": "logsmith",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Keeps social sites usable without an account by hiding login walls and sign-up pop-ups",
   "license": "MIT",
   "private": true,

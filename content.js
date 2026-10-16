@@ -445,6 +445,37 @@
     true
   );
 
+  // ───────────── Full screen for videos
+  //
+  // On X, the full-screen button of a video can be tied to the account. When the page did not go full screen by
+  // itself shortly after a click on that button, Logsmith asks the browser for full screen on the player, using
+  // the click you just made. This is the browser's own full-screen mode; nothing is sent anywhere.
+
+  const FS_LABEL = /full\s?-?screen|vollbild|plein\s+[ée]cran|pantalla\s+completa|schermo\s+intero|tela\s+cheia|полноэкранн|tam\s+ekran|全画面|전체\s?화면|全屏/i;
+  addEventListener(
+    "click",
+    (e) => {
+      if (SITE !== "x" || paused || !e.isTrusted) return;
+      const b = e.target && e.target.closest && e.target.closest('button,[role="button"]');
+      if (!b || !FS_LABEL.test(b.getAttribute("aria-label") || b.innerText || "")) return;
+      const player = b.closest('[data-testid="videoPlayer"],[data-testid="videoComponent"],[data-testid="previewInterstitial"]');
+      let box = player;
+      let video = player && player.querySelector("video");
+      for (let p = b.parentElement; !video && p && p !== document.body; p = p.parentElement) {
+        video = p.querySelector("video");
+        box = p;
+      }
+      if (!video) return;
+      setTimeout(() => {
+        if (document.fullscreenElement || !document.fullscreenEnabled) return;
+        log.push({ tag: "fullscreen", text: "player", at: Date.now() });
+        const go = (el) => el.requestFullscreen && el.requestFullscreen().catch(() => {});
+        go(box || video.parentElement || video);
+      }, 250);
+    },
+    true
+  );
+
   // ───────────── Running
 
   // Pop-ups are caught before the browser paints them: a mutation schedules a scan for the next animation

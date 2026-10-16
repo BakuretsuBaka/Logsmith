@@ -31,6 +31,7 @@ pages["instagram.com"] = (u) => u.startsWith("/p/")
 pages["x.com"] = () => `<body style="margin:0"><div id="react-root">${header}${feed}<div style="height:3000px"></div></div>
 <div data-testid="BottomBar" style="position:fixed;bottom:0;left:0;right:0;background:#1da1f2;color:#fff;padding:12px">Don't miss what's happening <a href="/login" data-testid="loginButton">Log in</a> <a href="/i/flow/signup" data-testid="signupButton">Sign up</a></div>
 <div id="layers"></div>
+<div id="vp" data-testid="videoPlayer" style="width:400px;height:240px;background:#222"><video muted></video><button id="fsb" aria-label="Full screen" onclick="document.getElementById('layers').innerHTML='<div role=dialog data-testid=sheetDialog>Sign in to X <a href=/i/flow/login>Log in</a></div>'">fs</button></div>
 <script>setTimeout(()=>{document.getElementById('layers').innerHTML='<div><div style="position:fixed;inset:0;background:#0009"></div><div data-testid="sheetDialog" role="dialog" style="position:fixed;top:25%;left:30%;width:40%;background:#000;color:#fff;padding:24px;z-index:20"><h2>Sign in to X</h2><a href="/i/flow/login" data-testid="loginButton">Log in</a><a href="/i/flow/signup">Create account</a></div></div>';document.documentElement.style.overflow='hidden';},500);</script></body>`;
 
 pages["tiktok.com"] = () => `<body style="margin:0">${header}<div id="feed">${feed}<div style="height:3000px"></div></div>
@@ -108,6 +109,9 @@ const check = (name, ok, extra = "") => {
   check("x: sign-in sheet hidden", !(await visible(page, '[data-testid="sheetDialog"]')));
   check("x: header login kept", await visible(page, "#hdr-login"));
   check("x: page scrolls again", await page.evaluate(() => getComputedStyle(document.documentElement).overflowY !== "hidden" && getComputedStyle(document.body).overflowY !== "hidden"));
+  await page.click("#fsb");
+  await page.waitForTimeout(900);
+  check("x: video goes full screen", await page.evaluate(() => !!document.fullscreenElement));
   await page.close();
 
   // TikTok
