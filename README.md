@@ -1,4 +1,6 @@
-# Logsmith
+<p align="center"><img src="icons/icon-128.png" width="96" alt="Logsmith icon"></p>
+
+<h1 align="center">Logsmith</h1>
 
 A browser extension (Chrome and Firefox, Manifest V3) that keeps social sites usable without an account. Instagram, TikTok, X and others let you look around for a while and then put a login wall over the page, lock scrolling or send you to the login screen. Logsmith takes those obstacles away so you can keep reading.
 
