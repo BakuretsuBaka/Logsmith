@@ -30,9 +30,28 @@ Logsmith has no network access of its own, collects nothing and stores only its 
 
 ## Install
 
-**Chrome / Edge:** open `chrome://extensions`, enable Developer mode, choose "Load unpacked" and select this folder.
+### Firefox
 
-**Firefox:** open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on" and select `manifest.json`.
+Install it from Firefox Add-ons: [Logsmith on addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/logsmith/). Click "Add to Firefox". It updates itself.
+
+### Chrome, Edge, Brave and other Chromium browsers
+
+Logsmith is not in the Chrome Web Store, so you install it by hand from the [latest release](https://github.com/BakuretsuBaka/Logsmith/releases/latest):
+
+1. Download `Logsmith-<version>-chromium.zip` from the release page (under "Assets").
+2. Unzip it into a folder you will keep, for example `Documents/Logsmith`. The browser reads the extension from that folder every time it starts, so do not delete it afterwards.
+3. Open `chrome://extensions` (in Edge `edge://extensions`, in Brave `brave://extensions`) and switch on "Developer mode" in the top right.
+4. Click "Load unpacked" and select the unzipped folder, the one that contains `manifest.json`.
+
+The extension does not update itself this way. To update, download the new zip from the [releases page](https://github.com/BakuretsuBaka/Logsmith/releases), unzip it over the old folder and click the reload button on the extension's card in `chrome://extensions`.
+
+### Firefox without Add-ons (optional)
+
+The release also has a `Logsmith-<version>-firefox.zip`. In Firefox, open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select that zip. Temporary add-ons are removed when Firefox closes, so the Add-ons page above is the better way.
+
+### From source
+
+Clone this repository and load the folder directly ("Load unpacked" in Chromium browsers, or `manifest.json` as a temporary add-on in Firefox), or build the packages yourself with `python3 tools/build.py`.
 
 ## Development
 
