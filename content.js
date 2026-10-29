@@ -476,7 +476,8 @@
       if (!POST_PATH || paused || !e.isTrusted || e.defaultPrevented) return;
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = e.target && e.target.closest && e.target.closest("a[href]");
-      if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+      // The author link above a post has target="_blank": that one opens in a new tab, as the link says
+      if (!a || (a.target && a.target !== "_self" && a.target !== "_blank") || a.hasAttribute("download")) return;
       let url;
       try {
         url = new URL(a.href, location.href);
@@ -488,7 +489,8 @@
       e.preventDefault();
       e.stopImmediatePropagation();
       log.push({ tag: "open-post", text: url.pathname, at: Date.now() });
-      location.assign(url.href);
+      if (a.target === "_blank") window.open(url.href, "_blank", "noopener");
+      else location.assign(url.href);
     },
     true
   );
