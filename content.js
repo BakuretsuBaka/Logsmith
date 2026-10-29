@@ -70,9 +70,13 @@
   const WALL = "data-logsmith-wall";
   const UNBLUR = "data-logsmith-unblur";
   const ROOT = document.documentElement;
+  // "On" until the settings say otherwise: content.css only hides pop-ups while this is set, and the
+  // settings arrive asynchronously, so without it a pop-up that comes first would be painted
+  ROOT.setAttribute("data-logsmith", "on");
 
   let settings = { enabled: true, sites: {}, keepLoading: true };
   let paused = false;
+  let loaded = false;
   let removed = 0;
   let lastDismiss = 0;
   let unlocked = false;
@@ -260,6 +264,34 @@
         el.setAttribute(WALL, "backdrop");
         el.removeAttribute(HOLD);
       } else if (dialogShown || now - (holdTime.get(el) || 0) > 2500) el.removeAttribute(HOLD);
+    }
+  }
+
+  // Judged inside the mutation callback itself (a microtask, so before the browser paints), not a frame later:
+  // new nodes and changed attributes lead to the fixed layer they belong to, and a wall among them goes at once.
+  function judgeNow(records) {
+    if (!loaded || paused || onLoginPage()) return;
+    const layers = new Set();
+    let n = 0;
+    for (const rec of records) {
+      const nodes = rec.type === "attributes" ? [rec.target] : rec.addedNodes;
+      for (const node of nodes) {
+        if (++n > 30) break;
+        const el = node.nodeType === 1 ? node : node.parentElement;
+        if (!el || !el.isConnected) continue;
+        const up = nearestLayer(el);
+        if (up) layers.add(up);
+        if (rec.type === "childList" && node.nodeType === 1) {
+          // a wrapper that was added with the fixed layer inside it
+          for (const d of [...node.querySelectorAll("div,section,aside")].slice(0, 12)) {
+            const s = style(d);
+            if (s && s.position === "fixed") layers.add(d);
+          }
+        }
+      }
+    }
+    for (const layer of [...layers].slice(0, 8)) {
+      if (layer.isConnected && !layer.hasAttribute(WALL) && isWall(layer)) dismiss(layer);
     }
   }
 
@@ -550,7 +582,7 @@
   function scan() {
     timer = 0;
     lastScanAt = performance.now();
-    if (paused || document.visibilityState === "hidden" || !document.body) return;
+    if (!loaded || paused || document.visibilityState === "hidden" || !document.body) return;
     if (!onLoginPage()) {
       for (const el of candidates()) {
         if (!el.hasAttribute(WALL) && el.isConnected && isWall(el)) dismiss(el);
@@ -635,16 +667,19 @@
     };
   }
 
+  // Started at once: the page's own scripts may add a pop-up before the body is complete
+  new MutationObserver((records) => {
+    holdAdded(records);
+    judgeNow(records);
+    soon();
+  }).observe(ROOT, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["style", "class", "role", "aria-modal", "open"]
+  });
+
   function init() {
-    new MutationObserver((records) => {
-      holdAdded(records);
-      soon();
-    }).observe(ROOT, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["style", "class", "role", "aria-modal", "open"]
-    });
     // Walls often appear on a timer without any DOM change we would notice in time
     setInterval(() => !paused && schedule(0), 1500);
     setInterval(keepLoading, 1500);
@@ -678,5 +713,9 @@
   }
 
   // The page's own styles are not there yet at document_start: start once the first nodes exist
-  load().then(() => (document.body ? init() : document.addEventListener("DOMContentLoaded", init, { once: true })));
+  load().then(() => {
+    loaded = true;
+    apply();
+    document.body ? init() : document.addEventListener("DOMContentLoaded", init, { once: true });
+  });
 })();
