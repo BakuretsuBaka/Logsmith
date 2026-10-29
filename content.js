@@ -463,7 +463,10 @@
   // into exactly that: a normal navigation to the same address, as if you had pasted it into a new tab.
 
   const POST_PATHS = {
-    instagram: /^\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/[\w-]+\/?$/,
+    // posts, and profiles (/name/: the author above a post); the app's own sections are left to the app
+    instagram: new RegExp(
+      "^/(?:(?:[^/]+/)?(?:p|reel|reels|tv)/[\\w-]+/?|(?!(?:explore|reels?|accounts|direct|stories|p|tv|about|legal|web|developer|challenge|oauth|emails|session|api|graphql|ajax|nametag|directory|topics|locations)(?:/|$))[\\w.]+/?)$"
+    ),
     pinterest: /^\/pin\/[\w-]+\/?$/
   };
   const POST_PATH = POST_PATHS[SITE];
