@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 
 const NAMES = {
   instagram: "Instagram", tiktok: "TikTok", x: "X (Twitter)", threads: "Threads", facebook: "Facebook",
-  reddit: "Reddit", pinterest: "Pinterest", quora: "Quora", linkedin: "LinkedIn"
+  reddit: "Reddit", pinterest: "Pinterest", quora: "Quora", linkedin: "LinkedIn", soundcloud: "SoundCloud"
 };
 
 let settings = { enabled: true, sites: {}, keepLoading: true };

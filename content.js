@@ -16,7 +16,8 @@
     ["reddit", /(^|\.)reddit\.com$/],
     ["pinterest", /(^|\.)pinterest\.com$/],
     ["quora", /(^|\.)quora\.com$/],
-    ["linkedin", /(^|\.)linkedin\.com$/]
+    ["linkedin", /(^|\.)linkedin\.com$/],
+    ["soundcloud", /(^|\.)soundcloud\.com$/]
   ];
 
   const siteOf = (host) => {
@@ -176,9 +177,32 @@
   }
 
   // X's bar for visitors: "See <name>'s full profile" with a "Continue to X" button (no login word in it)
-  const X_PROMO = /continue to x\b|full profile|weiter zu x\b|zum vollst[aä]ndigen profil|continuer sur x\b/i;
+  const X_PROMO =
+    /continue to x\b|full profile|don.t miss what.s happening|people on x are the first to know|weiter zu x\b|zum vollst[aä]ndigen profil|verpasse nicht|verpass nichts|continuer sur x\b|ne manquez pas|no te pierdas lo que/i;
 
+  // SoundCloud: the sign-in pop-up is a fixed wrapper (.webAuthContainerWrapper) plus an empty .auth-modal backdrop,
+  // opened by almost any click (play, like ...). When the click was on a Sign in / Create account button the person
+  // wants it: it is marked and left alone. Everything else is a wall.
+  let authClickAt = 0;
+  addEventListener(
+    "click",
+    (e) => {
+      const b = e.isTrusted && e.target && e.target.closest && e.target.closest('a,button,[role="button"]');
+      const t = b ? (b.innerText || b.getAttribute("aria-label") || b.title || "").trim() : "";
+      if (t && t.length <= 40 && authText(t)) authClickAt = Date.now();
+    },
+    true
+  );
+  const SC_AUTH = ".auth-modal,.webAuthContainerWrapper";
   function isWall(el) {
+    if (SITE === "soundcloud" && el.matches && el.matches(SC_AUTH)) {
+      if (el.hasAttribute("data-logsmith-ok")) return false;
+      if (Date.now() - authClickAt < 4000) {
+        el.setAttribute("data-logsmith-ok", "");
+        return false;
+      }
+      return shown(el);
+    }
     if (!shown(el)) return false;
     if (siteChrome(el)) return false;
     if (el.closest('header,nav,[role="banner"],[role="navigation"],[role="menu"],[role="tooltip"],[role="listbox"]')) return false;
@@ -189,6 +213,42 @@
     if (el.querySelector('article,main,[role="feed"],[role="main"],[role="article"]')) return false;
     if (bigMedia(el)) return false;
     return hasAuthControl(el);
+  }
+
+  // X's pop-up and bottom bar for visitors ("Don't miss what's happening", "See <name>'s full profile" + "Continue to X")
+  // are found by their words, wherever the page puts them: not every one is a dialog or a fixed layer, and they carry
+  // no log-in word. Climb from the matching text to the biggest wrapper that is still only the promo.
+  const X_TEXT = new RegExp(X_PROMO.source, "i");
+  function sweepXPromos() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node;
+    let checked = 0;
+    while ((node = walker.nextNode()) && checked < 4000) {
+      checked++;
+      const v = node.nodeValue;
+      if (!v || v.length > 120 || !X_TEXT.test(v)) continue;
+      let best = null;
+      for (let p = node.parentElement, i = 0; p && p !== document.body && p !== ROOT && i < 14; p = p.parentElement, i++) {
+        if (p.hasAttribute(WALL)) {
+          best = null;
+          break;
+        }
+        if (p.querySelector('article,main,video,[role="feed"],[role="main"],[data-testid="primaryColumn"]')) break;
+        if (/^(?:header|nav|main|article|section)$/i.test(p.tagName) || p.getAttribute("role") === "main") break;
+        if (((p.innerText || "").trim()).length > 240) break;
+        best = p;
+      }
+      if (!best || !shown(best)) continue;
+      log.push({ tag: best.tagName.toLowerCase(), text: (best.innerText || "").replace(/\s+/g, " ").slice(0, 120), at: Date.now() });
+      best.setAttribute(WALL, "wall");
+      hideBackdrops(best);
+      settleHolds(true);
+      removed++;
+      lastDismiss = Date.now();
+      unlocked = true;
+      ROOT.setAttribute("data-logsmith-unlocked", "");
+      report();
+    }
   }
 
   // From the element that matched up to the whole layer (wrappers carry the backdrop and the scroll lock)
@@ -592,6 +652,7 @@
         if (!el.hasAttribute(WALL) && el.isConnected && isWall(el)) dismiss(el);
       }
     }
+    if (SITE === "x" && !onLoginPage()) sweepXPromos();
     release();
     clearPending();
     settleHolds(false);
@@ -606,6 +667,10 @@
       if (el.hasAttribute(WALL)) continue;
       if (!firstSeen.has(el)) firstSeen.set(el, now);
       const text = (el.innerText || "").trim();
+      if (SITE === "x" && text && text.length <= 240 && X_PROMO.test(text) && !el.querySelector("article,main,video")) {
+        dismiss(climb(el));
+        continue;
+      }
       // Whatever the finer checks said: a short dialog that asks for an account and shows no content is a wall
       if (text && text.length <= 900 && authText(text) && !onLoginPage() && !siteChrome(el) && !el.querySelector("article,main,[role=feed],[role=main]") && shown(el)) {
         dismiss(climb(el));

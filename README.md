@@ -12,7 +12,7 @@ A browser extension (Chrome and Firefox, Manifest V3) that keeps social sites us
 - **Leaves everything else alone.** The Log in button in the page header, share dialogs, a post opened in a dialog: untouched.
 - **Per-site switches.** One toggle in the popup for the current site, a master switch, and a list of all sites. The toolbar icon turns grey where Logsmith is off and shows a badge with the number of walls it hid.
 
-Supported: Instagram, TikTok, X (Twitter), Threads, Facebook, Reddit, Pinterest, Quora, LinkedIn.
+Supported: Instagram, TikTok, X (Twitter), Threads, Facebook, Reddit, Pinterest, Quora, LinkedIn, SoundCloud.
 
 ## What it cannot do
 
